@@ -1,9 +1,0 @@
-{
-  "redirects": [
-    {
-      "source": "/(.*)",
-      "destination": "https://www.pratix.io/prompter/$1",
-      "permanent": true
-    }
-  ]
-}
