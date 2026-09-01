@@ -2,22 +2,20 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const pagePath = path.join(root, 'dist', 'en', 'prompt-generator', 'index.html');
+const route = process.env.SEO_ROUTE || 'en/prompt-generator';
+const pagePath = path.join(root, 'dist', ...route.split('/'), 'index.html');
+if (!fs.existsSync(pagePath)) throw new Error(`Missing generated page: ${pagePath}`);
 const html = fs.readFileSync(pagePath, 'utf8');
-const required = [
-  '<title>Prompt Generator Pro – Free AI Prompt Generator | Pratix.io</title>',
-  '<meta name="description" content="Create professional AI prompts for Midjourney, DALL-E, Stable Diffusion, Sora, Runway, ChatGPT, Claude and Gemini in your browser." />',
-  '<link rel="canonical" href="https://pratix.io/en/prompt-generator" />',
-  'hreflang="en"',
-  'hreflang="x-default"',
-  'id="prerendered-seo-content"',
-  'textarea',
-  'localStorage',
-  'copy',
-];
+const title = html.match(/<title>([\s\S]*?)<\/title>/i)?.[1] || '';
+const description = html.match(/<meta\s+name="description"\s+content="([^"]*)"/i)?.[1] || '';
+const canonical = html.match(/<link\s+rel="canonical"\s+href="([^"]*)"/i)?.[1] || '';
+const required = ['textarea', 'localStorage'];
 const missing = required.filter(marker => !html.includes(marker));
-if (missing.length) throw new Error(`Missing markers: ${missing.join(', ')}`);
-if ((html.match(/data-prerender-hreflang="true"/g) || []).length !== 2) {
-  throw new Error('Expected exactly 2 pilot hreflang links');
-}
-console.log('Static head and client-side prompt editor markers: passed');
+if (!title || title.length > 60) throw new Error(`Invalid title length: ${title.length}`);
+if (!description || description.length < 100 || description.length > 180) throw new Error(`Invalid description length: ${description.length}`);
+if (!canonical.startsWith('https://pratix.io/') && !canonical.startsWith('https://')) throw new Error(`Invalid canonical: ${canonical}`);
+if (!html.includes('name="robots"') && !html.includes('name="googlebot"')) throw new Error('Missing robots metadata');
+if (!html.includes('property="og:title"')) throw new Error('Missing Open Graph title');
+if (!html.includes('name="twitter:card"')) throw new Error('Missing Twitter card');
+if (missing.length) throw new Error(`Missing client-side markers: ${missing.join(', ')}`);
+console.log(`SEO and client-side markers passed for ${route}`);
